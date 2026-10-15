@@ -24,6 +24,20 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Siapkan kunci tanda tangan tetap (opsional)
+        env:
+          KS_B64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/cloudssd.jks"
+            echo "CLOUDSSD_KEYSTORE=$RUNNER_TEMP/cloudssd.jks" >> "$GITHUB_ENV"
+            echo "CLOUDSSD_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "SIGNING_NOTE=Ditandatangani dengan kunci tetap: pembaruan dapat dipasang langsung di atas versi lama." >> "$GITHUB_ENV"
+          else
+            echo "SIGNING_NOTE=PERHATIAN: ditandatangani dengan kunci debug acak. Untuk memperbarui, hapus dulu aplikasi lama (akun admin & pilihan folder SSD perlu diatur ulang; file di SSD tidak terhapus)." >> "$GITHUB_ENV"
+          fi
+
       - name: Tes modul inti
         run: |
           chmod +x gradlew
@@ -46,4 +60,4 @@ jobs:
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest CloudSSD.apk \
             --title "CloudSSD (build terbaru)" \
-            --notes "APK debug dibangun otomatis dari commit ${GITHUB_SHA::7}. Pasang di Xiaomi Pad 6 (Android 11+)."
+            --notes "APK dibangun otomatis dari commit ${GITHUB_SHA::7}. Pasang di Xiaomi Pad 6 (Android 11+). ${SIGNING_NOTE}"

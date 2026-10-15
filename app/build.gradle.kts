@@ -3,6 +3,11 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// Kunci tanda tangan tetap (opsional) dari variabel lingkungan, mis. diisi GitHub Actions dari Secrets.
+// Tanpa kunci tetap, setiap build di mesin baru memakai kunci debug acak sehingga pembaruan APK
+// tidak bisa dipasang di atas versi lama.
+val stableKeystore: String? = System.getenv("CLOUDSSD_KEYSTORE")?.takeIf { file(it).exists() }
+
 android {
     namespace = "id.cloudssd.app"
     compileSdk = 35
@@ -17,12 +22,25 @@ android {
         versionName = "1.0.0"
     }
 
+    signingConfigs {
+        if (stableKeystore != null) {
+            create("stable") {
+                storeFile = file(stableKeystore)
+                storePassword = System.getenv("CLOUDSSD_KEYSTORE_PASSWORD")
+                keyAlias = "cloudssd"
+                keyPassword = System.getenv("CLOUDSSD_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
+        getByName("debug") {
+            signingConfigs.findByName("stable")?.let { signingConfig = it }
+        }
         release {
             // Tanpa minify agar mudah ditelusuri; APK dipasang manual (sideload).
             isMinifyEnabled = false
-            // Untuk rilis sungguhan, buat keystore sendiri (lihat docs/BUILD.md).
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("stable") ?: signingConfigs.getByName("debug")
         }
     }
 
