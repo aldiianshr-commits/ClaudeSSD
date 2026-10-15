@@ -1,0 +1,49 @@
+# Membangun APK CloudSSD di server GitHub (tanpa laptop).
+# Berjalan otomatis setiap ada perubahan di branch main, atau manual lewat tab Actions › "Build APK" › Run workflow.
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # untuk membuat rilis "latest" berisi file APK
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Tes modul inti
+        run: |
+          chmod +x gradlew
+          ./gradlew :core:test --no-daemon
+
+      - name: Build APK
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Simpan APK sebagai artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CloudSSD-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Terbitkan ke rilis "latest" (unduh langsung dari HP)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk CloudSSD.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest CloudSSD.apk \
+            --title "CloudSSD (build terbaru)" \
+            --notes "APK debug dibangun otomatis dari commit ${GITHUB_SHA::7}. Pasang di Xiaomi Pad 6 (Android 11+)."

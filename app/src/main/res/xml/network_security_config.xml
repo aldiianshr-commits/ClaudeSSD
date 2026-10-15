@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aplikasi hanya membuat koneksi keluar ke server CloudSSD miliknya sendiri
+     (tombol "Uji koneksi" ke 127.0.0.1 dan IP Wi-Fi tablet), yang memakai HTTP lokal. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
