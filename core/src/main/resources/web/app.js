@@ -338,6 +338,8 @@
         h('dt', null, 'Perangkat ini'), h('dd', null, srv.clientIp + ' ', h('span', { class: 'tag ' + (srv.clientNetwork === 'vpn' ? 'blue' : '') }, netLabel(srv.clientNetwork))),
         h('dt', null, 'Akses LAN'), h('dd', null, srv.lanAccess ? 'Aktif (Wi-Fi yang sama)' : 'Nonaktif (hanya tablet)'),
         h('dt', null, 'Akses VPN'), h('dd', null, srv.vpnAccess ? 'Diizinkan (Tailscale)' : 'Nonaktif')),
+      d.webdav && d.webdav.enabled && h('div', { class: 'addr' }, icon('drive', 'sm'), h('span', { class: 'mono grow ellipsis' }, location.origin + d.webdav.path),
+        h('span', { class: 'tag blue' }, 'Drive'), h('button', { class: 'btn ghost icon sm', title: 'Salin', onclick: () => copyText(location.origin + d.webdav.path) }, icon('copy', 'sm'))),
       srv.addresses.length ? srv.addresses.map((a) => {
         const url = 'http://' + a.ip + ':' + srv.port;
         return h('div', { class: 'addr' }, icon(a.network === 'vpn' ? 'globe' : 'wifi', 'sm'), h('span', { class: 'mono grow ellipsis' }, url),
@@ -796,11 +798,13 @@
       try {
         const s = await api('GET', '/api/admin/settings');
         const mu = h('input', { type: 'checkbox', checked: s.multiUser });
+        const dv = h('input', { type: 'checkbox', checked: s.webdavEnabled });
         const low = h('input', { class: 'input', type: 'number', min: 0, step: 1, value: Math.round(s.lowSpaceWarnBytes / 1e9) });
         const hosts = h('input', { class: 'input mono', value: s.extraHosts.join(', '), placeholder: 'mis. pad6.tail1234.ts.net' });
         low.style.maxWidth = '140px';
         clear(adminBox).append(h('h2', { class: 'section-title' }, 'Server (administrator)'),
           h('div', { class: 'setting' }, h('div', { class: 'grow' }, h('div', null, 'Mode multi-pengguna'), h('div', { class: 'd' }, 'Nonaktif = mode pribadi, hanya administrator yang dapat masuk.')), h('label', { class: 'switch' }, mu, h('span'))),
+          h('div', { class: 'setting' }, h('div', { class: 'grow' }, h('div', null, 'Drive jaringan (WebDAV)'), h('div', { class: 'd' }, 'Tampilkan CloudSSD sebagai penyimpanan/drive di aplikasi file HP, File Explorer, atau Finder di alamat …/dav/. Memakai akun CloudSSD yang sama.')), h('label', { class: 'switch' }, dv, h('span'))),
           h('div', { class: 'setting' }, h('div', { class: 'grow' }, h('div', null, 'Peringatan ruang hampir penuh (GB)'), h('div', { class: 'd' }, 'Dashboard memberi peringatan bila ruang kosong SSD di bawah nilai ini.')), low),
           h('div', { class: 'field', style: null }, h('label', null, 'Nama host tambahan yang diizinkan'), hosts, h('div', { class: 'hint' }, 'Untuk nama domain sertifikat HTTPS. Alamat IP, localhost, dan *.ts.net (bila VPN aktif) selalu diizinkan.')),
           h('dl', { class: 'kv' }, h('dt', null, 'Akses LAN'), h('dd', null, s.lanAccess ? 'Aktif' : 'Nonaktif'), h('dt', null, 'Akses VPN'), h('dd', null, s.vpnAccess ? 'Aktif' : 'Nonaktif'),
@@ -808,7 +812,7 @@
           h('p', { class: 'muted' }, h('small', null, s.note)),
           h('button', { class: 'btn primary', onclick: async () => {
             try {
-              const r = await api('PATCH', '/api/admin/settings', { multiUser: mu.checked, lowSpaceWarnBytes: Math.max(0, Math.round(+low.value * 1e9)), extraHosts: hosts.value.split(',').map((x) => x.trim()).filter(Boolean) });
+              const r = await api('PATCH', '/api/admin/settings', { multiUser: mu.checked, webdavEnabled: dv.checked, lowSpaceWarnBytes: Math.max(0, Math.round(+low.value * 1e9)), extraHosts: hosts.value.split(',').map((x) => x.trim()).filter(Boolean) });
               state.multiUser = r.multiUser; toast('Pengaturan disimpan', 'ok');
             } catch (x) { toast(x.message, 'err'); }
           } }, 'Simpan pengaturan'));

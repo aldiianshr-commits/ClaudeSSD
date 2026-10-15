@@ -48,6 +48,7 @@ class Api(private val server: CloudServer) {
 
     /** Hibah akses tautan berbagi yang dilindungi kata sandi: grantToken -> (shareId, kedaluwarsa). */
     private val shareGrants = ConcurrentHashMap<String, Pair<String, Long>>()
+    private val webdav = WebDav(server)
 
     fun handle(req: HttpRequest): HttpResponse {
         val settings = server.settings.current
@@ -111,6 +112,7 @@ class Api(private val server: CloudServer) {
     private fun route(req: HttpRequest): HttpResponse {
         val p = req.path
         val m = req.method
+        if (m == "OPTIONS" || p == WebDav.PREFIX || p.startsWith(WebDav.PREFIX + "/")) return webdav.handle(req)
         if (!p.startsWith("/api/")) {
             if (m != "GET" && m != "HEAD") throw ApiError(405, "Metode tidak diizinkan")
             return StaticFiles.serve(p)
@@ -547,6 +549,7 @@ class Api(private val server: CloudServer) {
             "stats" to (stats?.toJson() ?: mapOf("files" to null, "folders" to null, "bytes" to null, "computedAt" to null)),
             "scanning" to server.stats.isScanning(scope),
             "quota" to mapOf("quotaBytes" to ctx.user.quotaBytes, "usedBytes" to stats?.bytes),
+            "webdav" to mapOf("enabled" to s.webdavEnabled, "path" to WebDav.PREFIX + "/"),
             "remote" to linkedMapOf(
                 "vpnAccess" to s.vpnAccess, "vpnInterfaceDetected" to addresses.any { it.network == ClientNetwork.VPN },
                 "lastVerifiedAt" to server.lastRemoteAccess?.time, "lastVerifiedIp" to server.lastRemoteAccess?.ip,
@@ -666,6 +669,7 @@ class Api(private val server: CloudServer) {
                 server.settings.update { cur ->
                     cur.copy(
                         multiUser = body.bool("multiUser") ?: cur.multiUser,
+                        webdavEnabled = body.bool("webdavEnabled") ?: cur.webdavEnabled,
                         lowSpaceWarnBytes = body.long("lowSpaceWarnBytes") ?: cur.lowSpaceWarnBytes,
                         extraHosts = body.list("extraHosts")?.filterIsInstance<String>()?.map { it.trim() }?.filter { it.isNotEmpty() } ?: cur.extraHosts,
                     )
@@ -683,7 +687,7 @@ class Api(private val server: CloudServer) {
 
     private fun adminSettings(): Map<String, Any?> {
         val s = server.settings.current
-        return linkedMapOf("multiUser" to s.multiUser, "lowSpaceWarnBytes" to s.lowSpaceWarnBytes, "extraHosts" to s.extraHosts,
+        return linkedMapOf("multiUser" to s.multiUser, "webdavEnabled" to s.webdavEnabled, "lowSpaceWarnBytes" to s.lowSpaceWarnBytes, "extraHosts" to s.extraHosts,
             "lanAccess" to s.lanAccess, "vpnAccess" to s.vpnAccess, "port" to s.port, "httpsEnabled" to s.httpsEnabled,
             "note" to "Akses jaringan, port, dan HTTPS hanya dapat diubah dari aplikasi di tablet.")
     }

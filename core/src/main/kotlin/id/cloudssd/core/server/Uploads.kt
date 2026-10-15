@@ -195,6 +195,70 @@ class UploadManager(
         }
     }
 
+    /**
+     * Menulis satu file utuh dari stream (dipakai WebDAV PUT/COPY).
+     * Data ditulis ke file sementara tersembunyi lebih dulu; file tujuan baru dibuat/diganti
+     * setelah seluruh data tersimpan dan disinkronkan, sehingga kegagalan di tengah jalan
+     * tidak meninggalkan file setengah jadi.
+     * @return entri hasil dan true bila file baru (false bila mengganti file lama).
+     */
+    fun putStream(dir: VPath, name: String, input: InputStream, declaredSize: Long?): Pair<FileEntry, Boolean> {
+        NameRules.validate(name)
+        if (name.startsWith(Upload.PART_PREFIX)) throw ValidationException("Nama file tidak diizinkan")
+        val b = backend()
+        b.requireAvailable()
+        val d = b.stat(dir) ?: throw NotFoundException("Folder tujuan tidak ditemukan")
+        if (!d.isDirectory) throw NotFoundException("Tujuan bukan folder")
+        val existing = b.stat(dir.child(name))
+        if (existing?.isDirectory == true) throw AlreadyExistsException(name)
+        if (declaredSize != null) checkSpace(b, declaredSize)
+        ensureUploadDir(b)
+        val tmpName = Upload.PART_PREFIX + Tokens.urlToken(12) + ".part"
+        b.createFile(UPLOAD_DIR, tmpName)
+        val part = UPLOAD_DIR.child(tmpName)
+        var moved: VPath? = null
+        try {
+            val out = b.openWriteAt(part, 0)
+            var written = 0L
+            try {
+                val buf = ByteArray(256 * 1024)
+                while (true) {
+                    val max = if (declaredSize != null) minOf(buf.size.toLong(), declaredSize - written).toInt() else buf.size
+                    if (max <= 0) break
+                    val n = input.read(buf, 0, max)
+                    if (n == -1) break
+                    out.write(buf, 0, n)
+                    written += n
+                    // Tanpa ukuran yang diketahui, periksa ruang secara berkala.
+                    if (declaredSize == null && written % (64L * 1024 * 1024) < n) {
+                        b.capacity()?.let { if (it.freeBytes < reserveBytes) throw NoSpaceException() }
+                    }
+                }
+                out.close()
+            } catch (e: IOException) {
+                try { out.close() } catch (_: IOException) {}
+                if (e.isNoSpace()) throw NoSpaceException(cause = e)
+                throw e
+            }
+            if (declaredSize != null && written != declaredSize) throw EOFException("Koneksi terputus saat mengunggah")
+            val m = b.move(part, dir).path
+            moved = m
+            if (existing != null) b.delete(dir.child(name))
+            val result = b.rename(m, name)
+            return result to (existing == null)
+        } catch (e: Exception) {
+            try {
+                if (b.isAvailable()) {
+                    if (moved == null) b.stat(part)?.let { b.delete(it.path) }
+                    else if (existing == null) b.stat(moved)?.let { b.delete(it.path) }
+                    // Bila file lama sudah terhapus tetapi penggantian gagal, file sementara dibiarkan
+                    // (tersembunyi) agar data tidak hilang; tercatat di log oleh pemanggil.
+                }
+            } catch (_: IOException) {}
+            throw e
+        }
+    }
+
     /** Total byte yang masih akan ditulis oleh unggahan yang sedang berjalan. */
     @Synchronized fun pendingBytes(): Long = uploads.values.sumOf { it.size - it.committed }
 

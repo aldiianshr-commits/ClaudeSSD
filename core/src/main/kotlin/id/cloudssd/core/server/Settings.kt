@@ -23,11 +23,14 @@ data class ServerSettings(
     val networkWarningAccepted: Boolean = false,
     /** Peringatan bila ruang kosong di bawah nilai ini. */
     val lowSpaceWarnBytes: Long = 10L * 1024 * 1024 * 1024,
+    /** Drive jaringan WebDAV di /dav/ (default nonaktif). */
+    val webdavEnabled: Boolean = false,
 ) {
     fun toMap(): Map<String, Any?> = linkedMapOf(
         "port" to port, "lanAccess" to lanAccess, "vpnAccess" to vpnAccess, "multiUser" to multiUser,
         "extraHosts" to extraHosts, "httpsEnabled" to httpsEnabled, "httpsPort" to httpsPort,
         "networkWarningAccepted" to networkWarningAccepted, "lowSpaceWarnBytes" to lowSpaceWarnBytes,
+        "webdavEnabled" to webdavEnabled,
     )
 
     fun validate() {
@@ -51,6 +54,7 @@ data class ServerSettings(
                 httpsPort = (m.long("httpsPort") ?: d.httpsPort.toLong()).toInt(),
                 networkWarningAccepted = m.bool("networkWarningAccepted") ?: d.networkWarningAccepted,
                 lowSpaceWarnBytes = m.long("lowSpaceWarnBytes") ?: d.lowSpaceWarnBytes,
+                webdavEnabled = m.bool("webdavEnabled") ?: d.webdavEnabled,
             )
         }
     }

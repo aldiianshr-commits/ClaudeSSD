@@ -266,6 +266,11 @@ class MainActivity : Activity() {
         card.addView(ui.switch("Izinkan VPN Tailscale", "Klien dari jaringan Tailscale (100.64.0.0/10) untuk akses dari luar rumah. Alamat internet publik selalu ditolak.", s.vpnAccess) { on ->
             app.core.settings.update { it.copy(vpnAccess = on) }; showRestartNote()
         })
+        card.addView(ui.switch("Drive jaringan (WebDAV)", "CloudSSD tampil sebagai penyimpanan/drive di aplikasi file HP, File Explorer Windows, atau Finder Mac (alamat …/dav/). Login memakai akun CloudSSD. Langsung berlaku.", s.webdavEnabled) { on ->
+            app.core.settings.update { it.copy(webdavEnabled = on) }
+            app.core.logs.activity.add(null, "settings", if (on) "Drive jaringan (WebDAV) diaktifkan" else "Drive jaringan (WebDAV) dinonaktifkan")
+            refresh()
+        })
         card.addView(ui.switch("Jaga CPU & Wi-Fi tetap aktif", "Memakai wake lock selama server berjalan agar transfer tidak terputus saat layar mati. Menambah pemakaian baterai.", app.keepAwake) { on ->
             app.keepAwake = on; showRestartNote()
         })
@@ -498,7 +503,7 @@ class MainActivity : Activity() {
         val state: ServerState, val lastError: String?, val port: Int, val httpsPort: Int, val startedAt: Long, val conns: Int,
         val hasAdmin: Boolean, val setupCode: String?, val addresses: List<LocalAddress>,
         val storage: StorageState, val storageDesc: String?, val volume: VolumeInfo.Info?, val capacity: Capacity?, val stats: TreeStats?, val scanning: Boolean,
-        val activity: List<String>, val errors: List<String>, val lan: Boolean, val vpn: Boolean, val lowWarn: Long,
+        val activity: List<String>, val errors: List<String>, val lan: Boolean, val vpn: Boolean, val webdav: Boolean, val lowWarn: Long,
         val httpsEnabled: Boolean, val certInfo: String?, val remoteVerified: String?, val batteryOk: Boolean, val unexpectedStop: Boolean,
         val notifOk: Boolean,
     )
@@ -518,7 +523,7 @@ class MainActivity : Activity() {
                 st, b?.description, b?.let { VolumeInfo.info(this, it.treeUri) }, cap, stats, core.stats.isScanning(VPath.ROOT),
                 core.logs.activity.recent(6).map { fmtTime(it.time) + "  " + (it.user?.let { u -> "$u · " } ?: "") + it.detail },
                 core.logs.errors.recent(12).map { fmtTime(it.time) + "  " + it.detail },
-                s.lanAccess, s.vpnAccess, s.lowSpaceWarnBytes, s.httpsEnabled, core.tlsCertificateInfo(),
+                s.lanAccess, s.vpnAccess, s.webdavEnabled, s.lowSpaceWarnBytes, s.httpsEnabled, core.tlsCertificateInfo(),
                 core.lastRemoteAccess?.let { "${it.ip}, ${fmtTime(it.time)}" },
                 getSystemService(PowerManager::class.java)?.isIgnoringBatteryOptimizations(packageName) == true,
                 app.serverShouldRun && core.state != ServerState.RUNNING,
@@ -565,6 +570,7 @@ class MainActivity : Activity() {
         if (s.lan) s.addresses.filter { it.network.name == "LAN" }.forEach { urls.add("http://${it.ip}:$port/" to "Wi-Fi (${it.iface})") }
         if (s.vpn) s.addresses.filter { it.network.name == "VPN" }.forEach { urls.add("http://${it.ip}:$port/" to "Tailscale") }
         if (s.lan && s.addresses.none { it.network.name == "LAN" }) addresses.addView(ui.text("Tidak ada alamat Wi-Fi terdeteksi. Pastikan tablet terhubung ke Wi-Fi.", 13.5f, C.WARN))
+        if (s.webdav) urls.addAll(urls.map { (u, l) -> "${u}dav/" to "drive · $l" })
         for ((u, label) in urls) {
             addresses.addView(ui.horizontal().apply {
                 addView(ui.text(u, 15f, if (running) C.TEXT else C.MUTED, mono = true), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))

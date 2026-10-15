@@ -4,10 +4,11 @@
 
 | Bagian | Status |
 |---|---|
-| Modul `core` (server, API, auth, penyimpanan, web) | ✅ Dikompilasi; **39/39 tes JUnit lulus** dengan heap JVM 96 MB |
+| Modul `core` (server, API, auth, penyimpanan, web) | ✅ Dikompilasi; **46/46 tes JUnit lulus** dengan heap JVM 96 MB |
 | Antarmuka web | ✅ Uji end-to-end otomatis di Chromium (desktop 1400×900 & ponsel 390×844): **lulus**, tanpa pelanggaran CSP |
 | Modul `app` (Android) | ⚠️ Kode Kotlin **lolos pemeriksaan tipe** terhadap `android.jar` API 35 (tanpa error). **Belum dibangun dengan Gradle/AGP** (resource, manifest merge, dex, lint belum dijalankan) karena lingkungan pembuatan tidak dapat mengakses repositori Google/Maven |
-| Perangkat fisik Xiaomi Pad 6 + SSD | ❌ **Belum diuji.** Wajib dilakukan sebelum dipakai untuk data penting — lihat daftar uji manual di bawah |
+| Drive jaringan (WebDAV) | ✅ 7 tes JUnit + uji interoperabilitas dengan klien **rclone 1.68.2** (kapasitas, salin 50 MB + cek byte, MOVE/COPY di server, timpa, hapus, sandi salah, traversal, LOCK/UNLOCK) |
+| Perangkat fisik Xiaomi Pad 6 + SSD | ⚠️ Pengguna melaporkan aplikasi terpasang, SSD 1 TB terbaca dengan kapasitas aktual, server berjalan, login berhasil. Uji transfer besar & skenario putus/restart masih perlu dilakukan. Wajib dilakukan sebelum dipakai untuk data penting — lihat daftar uji manual di bawah |
 
 ## Tes otomatis (`./gradlew :core:test`)
 

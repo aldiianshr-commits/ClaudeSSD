@@ -320,13 +320,13 @@ class HttpServer(
 
         fun reason(status: Int): String = when (status) {
             100 -> "Continue"
-            200 -> "OK"; 201 -> "Created"; 204 -> "No Content"; 206 -> "Partial Content"
+            200 -> "OK"; 201 -> "Created"; 204 -> "No Content"; 206 -> "Partial Content"; 207 -> "Multi-Status"
             301 -> "Moved Permanently"; 302 -> "Found"; 304 -> "Not Modified"
             400 -> "Bad Request"; 401 -> "Unauthorized"; 403 -> "Forbidden"; 404 -> "Not Found"
             405 -> "Method Not Allowed"; 409 -> "Conflict"; 410 -> "Gone"; 411 -> "Length Required"
             413 -> "Payload Too Large"; 415 -> "Unsupported Media Type"; 416 -> "Range Not Satisfiable"
-            423 -> "Locked"; 429 -> "Too Many Requests"; 431 -> "Request Header Fields Too Large"
-            500 -> "Internal Server Error"; 503 -> "Service Unavailable"; 505 -> "HTTP Version Not Supported"
+            412 -> "Precondition Failed"; 423 -> "Locked"; 429 -> "Too Many Requests"; 431 -> "Request Header Fields Too Large"
+            500 -> "Internal Server Error"; 501 -> "Not Implemented"; 502 -> "Bad Gateway"; 503 -> "Service Unavailable"; 505 -> "HTTP Version Not Supported"
             507 -> "Insufficient Storage"
             else -> "Status"
         }

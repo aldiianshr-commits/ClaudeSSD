@@ -8,7 +8,7 @@ Cloud storage pribadi yang menjadikan **Xiaomi Pad 6** sebagai server file, deng
 - Antarmuka web responsif, mode gelap (hitam/abu-abu/putih, aksen biru).
 - Default aman: server mati, hanya bisa diakses dari tablet sendiri, tidak ada akun bawaan.
 
-> **Status jujur:** modul inti (server, API, keamanan, web UI) sudah dikompilasi dan **39 tes otomatis lulus**, ditambah uji end-to-end di Chromium. Modul Android sudah **dicek tipenya terhadap `android.jar` API 35**, tetapi **APK belum dibangun dengan Gradle dan belum diuji di Xiaomi Pad 6 fisik** — lingkungan pembuatan tidak memiliki akses ke repositori Google/Maven. Lihat [docs/PENGUJIAN.md](docs/PENGUJIAN.md).
+> **Status:** APK berhasil dibangun otomatis di GitHub Actions dan sudah berjalan di Xiaomi Pad 6 (SSD 1 TB terbaca). Modul inti (server, API, keamanan, web UI, WebDAV) sudah dikompilasi dan **46 tes otomatis lulus**, ditambah uji end-to-end di Chromium. Uji transfer besar dan skenario SSD dicabut/tablet restart di perangkat fisik masih perlu dilakukan. Lihat [docs/PENGUJIAN.md](docs/PENGUJIAN.md).
 
 ---
 
@@ -53,8 +53,9 @@ Komponen terpisah sesuai permintaan: **server** (`http/`), **sistem file** (`sto
 1. Build APK — [docs/BUILD.md](docs/BUILD.md) (`./gradlew :app:assembleDebug`).
 2. Pasang di Xiaomi Pad 6, sambungkan SSD, pilih folder SSD, buat admin, mulai server — [docs/PANDUAN.md](docs/PANDUAN.md).
 3. Buka `http://<IP-tablet>:8080` dari HP/laptop di Wi-Fi yang sama.
-4. Akses dari luar rumah dengan aman (Tailscale) — [docs/AKSES-JARAK-JAUH.md](docs/AKSES-JARAK-JAUH.md).
-5. Batasan Android yang tetap berlaku — [docs/BATASAN.md](docs/BATASAN.md).
+4. Tampilkan CloudSSD sebagai drive/penyimpanan di HP, Windows, Mac — [docs/DRIVE-JARINGAN.md](docs/DRIVE-JARINGAN.md).
+5. Akses dari luar rumah dengan aman (Tailscale) — [docs/AKSES-JARAK-JAUH.md](docs/AKSES-JARAK-JAUH.md).
+6. Batasan Android yang tetap berlaku — [docs/BATASAN.md](docs/BATASAN.md).
 
 ## Fitur
 
@@ -67,5 +68,6 @@ Komponen terpisah sesuai permintaan: **server** (`http/`), **sistem file** (`sto
 | Keamanan | Admin dibuat saat pertama, PBKDF2-SHA256 + salt, sesi token acak (hanya hash yang disimpan), cookie HttpOnly + SameSite=Strict, CSRF token, cek Origin & Host (anti DNS-rebinding), pembatasan login, validasi path (anti traversal & symlink), CSP ketat, konten pengguna disajikan dalam sandbox |
 | Jaringan | Default hanya `127.0.0.1`; LAN harus diaktifkan dengan peringatan; VPN Tailscale opsional; **IP internet publik selalu ditolak**; HTTPS opsional via sertifikat `.p12` |
 | Pengguna | Mode pribadi (default), multi-pengguna opsional, folder per pengguna, izin baca/tulis, kuota dari data aktual, nonaktifkan akun, reset sandi dari tablet |
+| Drive jaringan | WebDAV di `/dav/` (opsional): tampil sebagai disk di aplikasi file Android, RaiDrive/Explorer Windows, Finder Mac, Linux; kapasitas = kapasitas aktual SSD atau kuota pengguna |
 | Berbagi | Tautan dengan masa berlaku, kata sandi opsional, mode hanya-lihat, cabut, hitung akses — tetap tunduk pada kebijakan jaringan |
 | Server | Mulai/hentikan, status, IP & port, status SSD/izin/akses jarak jauh, log kesalahan, uji koneksi, notifikasi tetap, panduan baterai Xiaomi |
